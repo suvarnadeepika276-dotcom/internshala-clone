@@ -7,6 +7,7 @@ import {
     Tag,
     User,
     XCircle,
+    FileText,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -252,6 +253,17 @@ const index = () => {
                                                 >
                                                     View Details
                                                 </Link>
+                                                {application.resumePdfUrl && (
+                                                    <a
+                                                        href={application.resumePdfUrl.startsWith("http") ? application.resumePdfUrl : `https://internshala-clone-ahv9.onrender.com${application.resumePdfUrl}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-purple-600 hover:text-purple-900 inline-flex items-center text-xs font-semibold gap-1 bg-purple-50 px-2 py-1 rounded"
+                                                        title="View Attached Resume"
+                                                    >
+                                                        <FileText className="h-3.5 w-3.5" /> Resume
+                                                    </a>
+                                                )}
                                                 <button
                                                     onClick={() => {
                                                         handleacceptandreject(application._id, "accepted");

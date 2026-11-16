@@ -14,5 +14,7 @@ const Applicationipschema = new mongoose.Schema({
         default: "pending",
     },
     Application: Object,
+    attachedResume: { type: mongoose.Schema.Types.ObjectId, ref: "Resume" },
+    resumePdfUrl: String,
 });
 module.exports = mongoose.model("Application", Applicationipschema);

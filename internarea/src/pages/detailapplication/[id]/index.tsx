@@ -118,6 +118,20 @@ const index = () => {
                                     </p>
                                 </div>
                             </div>
+
+                            {data.resumePdfUrl && (
+                                <div className="mt-6 pt-6 border-t">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Attached Resume (ATS Verified)</h3>
+                                    <a
+                                        href={data.resumePdfUrl.startsWith("http") ? data.resumePdfUrl : `https://internshala-clone-ahv9.onrender.com${data.resumePdfUrl}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm"
+                                    >
+                                        <FileText className="w-4 h-4" /> View Applicant Resume PDF
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

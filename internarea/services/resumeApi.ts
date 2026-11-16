@@ -69,6 +69,24 @@ export async function getHistory() {
   return res.data;
 }
 
+export async function getUserStatus() {
+  const headers = await authHeader();
+  const res = await axios.get(`${API_BASE}/resume/status`, { headers });
+  return res.data as { isPremium: boolean; user: any };
+}
+
+export async function activateTestPremium() {
+  const headers = await authHeader();
+  const res = await axios.post(`${API_BASE}/resume/activate-premium`, {}, { headers });
+  return res.data as { success: boolean; isPremium: boolean };
+}
+
+export async function deleteResume(resumeId: string) {
+  const headers = await authHeader();
+  const res = await axios.delete(`${API_BASE}/resume/${resumeId}`, { headers });
+  return res.data;
+}
+
 export async function downloadResume(resumeId: string) {
   const headers = await authHeader();
   const res = await axios.get(`${API_BASE}/resume/${resumeId}/download`, { headers });

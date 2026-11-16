@@ -8,12 +8,16 @@ import {
     ExternalLink,
     MapPin,
     X,
+    FileText,
+    CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { listResumes, setDefaultResume } from "../../../../services/resumeApi";
+import { Resume } from "../../../../types/resume";
 // export const internships = [
 //   {
 //     _id: "1",
@@ -89,7 +93,23 @@ const index = () => {
     const [availability, setAvailability] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [coverLetter, setCoverLetter] = useState("");
-    const user = useSelector(selectuser)
+    const [resumes, setResumes] = useState<Resume[]>([]);
+    const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+    const user = useSelector(selectuser);
+
+    useEffect(() => {
+        if (isModalOpen && user) {
+            listResumes()
+                .then((list) => {
+                    const paidList = (list || []).filter((r) => r.paymentStatus === "paid");
+                    setResumes(paidList);
+                    const def = paidList.find((r) => r.isDefault) || paidList[0];
+                    if (def?._id) setSelectedResumeId(def._id);
+                })
+                .catch(() => {});
+        }
+    }, [isModalOpen, user]);
+
     if (!internshipData) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -99,30 +119,34 @@ const index = () => {
     }
     const handlesubmitapplication = async () => {
         if (!coverLetter.trim()) {
-            toast.error("please write a cover letter")
-            return
+            toast.error("please write a cover letter");
+            return;
         }
         if (!availability) {
-            toast.error("please select your availability")
-            return
+            toast.error("please select your availability");
+            return;
         }
         try {
+            const chosenResume = resumes.find((r) => r._id === selectedResumeId);
             const applicationdata = {
                 category: internshipData.category,
                 company: internshipData.company,
                 coverLetter: coverLetter,
                 user: user,
                 Application: id,
-                availability
-            }
-            await axios.post("https://internshala-clone-ahv9.onrender.com/api/application", applicationdata)
-            toast.success("Application submit successfully")
-            router.push('/internship')
+                availability,
+                attachedResume: selectedResumeId || undefined,
+                resumePdfUrl: chosenResume?.pdfUrl || undefined,
+            };
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://internshala-clone-ahv9.onrender.com/api";
+            await axios.post(`${apiBase}/application`, applicationdata);
+            toast.success("Application submitted successfully with attached resume!");
+            router.push('/internship');
         } catch (error) {
-            console.error(error)
-            toast.error("Failed to submit application")
+            console.error(error);
+            toast.error("Failed to submit application");
         }
-    }
+    };
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -228,13 +252,50 @@ const index = () => {
                         </div>
                         <div className="p-6 space-y-6">
                             {/* Resume Section */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                    Your Resume
-                                </h3>
-                                <p className="text-gray-600">
-                                    Your current resume will be submitted with the application
-                                </p>
+                            <div className="bg-gray-50 border rounded-xl p-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                        <FileText className="w-4 h-4 text-blue-600" /> Attached Resume
+                                    </h3>
+                                    <Link
+                                        href="/resumebuilder"
+                                        target="_blank"
+                                        className="text-xs text-blue-600 font-semibold hover:underline"
+                                    >
+                                        Resume Builder →
+                                    </Link>
+                                </div>
+
+                                {resumes.length > 0 ? (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                value={selectedResumeId}
+                                                onChange={(e) => setSelectedResumeId(e.target.value)}
+                                                className="w-full text-xs border rounded-lg p-2 bg-white text-gray-800 font-medium"
+                                            >
+                                                {resumes.map((r) => (
+                                                    <option key={r._id} value={r._id}>
+                                                        {r.versionName || "Resume"} {r.isDefault ? "★ (Default Resume)" : ""} — {r.templateId || "Classic"}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <p className="text-[11px] text-gray-500">
+                                            The selected ATS-friendly resume will be attached to your internship application.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="text-xs text-gray-600">
+                                        <p>No paid ATS resume found in your profile.</p>
+                                        <Link
+                                            href="/resumebuilder"
+                                            className="inline-block mt-2 text-xs font-semibold text-blue-600 underline"
+                                        >
+                                            Generate an ATS Resume with Resume Builder (₹50)
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">

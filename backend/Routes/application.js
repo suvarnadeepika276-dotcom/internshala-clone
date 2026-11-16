@@ -10,6 +10,8 @@ router.post("/", async (req, res) => {
         user: req.body.user,
         Application: req.body.Application,
         body: req.body.body,
+        attachedResume: req.body.attachedResume,
+        resumePdfUrl: req.body.resumePdfUrl,
     });
     await applicationipdata
         .save()

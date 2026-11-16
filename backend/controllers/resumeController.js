@@ -17,6 +17,33 @@ function checkResumeComplete(resume) {
   return REQUIRED_FIELDS.every((field) => Boolean(resume[field]));
 }
 
+// --- User & Premium Status ---------------------------------------------
+
+exports.getUserStatus = async (req, res) => {
+  try {
+    res.status(200).json({
+      isPremium: Boolean(req.user?.isPremium),
+      user: {
+        name: req.user?.name,
+        email: req.user?.email,
+        isPremium: Boolean(req.user?.isPremium),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to retrieve user status" });
+  }
+};
+
+exports.activateTestPremium = async (req, res) => {
+  try {
+    req.user.isPremium = true;
+    await req.user.save();
+    res.status(200).json({ success: true, isPremium: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to activate premium status" });
+  }
+};
+
 // --- Draft CRUD ---------------------------------------------------------
 
 exports.createOrUpdateDraft = async (req, res) => {
@@ -239,6 +266,17 @@ exports.getHistory = async (req, res) => {
   const payments = await ResumePayment.find({ userId: req.user._id }).sort({ createdAt: -1 });
 
   res.status(200).json({ resumes, payments });
+};
+
+exports.deleteResume = async (req, res) => {
+  try {
+    const { resumeId } = req.params;
+    const deleted = await Resume.findOneAndDelete({ _id: resumeId, userId: req.user._id });
+    if (!deleted) return res.status(404).json({ error: "Resume not found" });
+    res.status(200).json({ success: true, message: "Resume deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete resume" });
+  }
 };
 
 exports.logDownload = async (req, res) => {
