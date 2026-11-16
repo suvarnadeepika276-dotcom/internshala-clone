@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 // const internshipData = [
 //   {
 //     _id: "1",
@@ -45,6 +46,7 @@ import React, { useEffect, useState } from "react";
 //   },
 // ];
 const index = () => {
+    const { t } = useLanguage();
     const [filteredInternships, setFilteredInternships] = useState<any>([]);
     const [isFilterVisible, setIsFilterVisible] = useState(false);
     const [filter, setFilters] = useState({
@@ -231,14 +233,14 @@ const index = () => {
                                         <div className="flex items-center space-x-2 text-gray-600">
                                             <Pin className="h-5 w-5" />
                                             <div>
-                                                <p className="text-sm font-medium">Location</p>
+                                                <p className="text-sm font-medium">{t("location")}</p>
                                                 <p className="text-sm">{internship.location}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-2 text-gray-600">
                                             <DollarSign className="h-5 w-5" />
                                             <div>
-                                                <p className="text-sm font-medium">Stipend</p>
+                                                <p className="text-sm font-medium">{t("stipend")}</p>
                                                 <p className="text-sm">{internship.stipend}</p>
                                             </div>
                                         </div>
@@ -246,7 +248,7 @@ const index = () => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center space-x-2">
                                             <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                                                Internship
+                                                {t("internships")}
                                             </span>
                                             <div className="flex items-center space-x-1 text-green-600">
                                                 <Clock className="h-4 w-4" />
@@ -257,7 +259,7 @@ const index = () => {
                                             href={`/detailinternship/${internship._id}`}
                                             className="text-blue-600 hover:text-blue-700 font-medium"
                                         >
-                                            View Details
+                                            {t("viewDetails")}
                                         </Link>
                                     </div>
                                 </div>

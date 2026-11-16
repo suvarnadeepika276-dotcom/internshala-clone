@@ -5,12 +5,14 @@ const intern = require("./internship");
 const job = require("./job");
 const application=require("./application")
 const resume = require("./resume");
+const language = require("./language");
 
 router.use("/admin", admin);
 router.use("/internship", intern);
 router.use("/job", job);
 router.use("/application", application);
 router.use("/resume", resume);
+router.use("/language", language);
 
 
 module.exports = router;

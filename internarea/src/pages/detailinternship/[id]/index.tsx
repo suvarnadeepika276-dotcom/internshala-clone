@@ -18,6 +18,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { listResumes, setDefaultResume } from "../../../../services/resumeApi";
 import { Resume } from "../../../../types/resume";
+import { useLanguage } from "@/context/LanguageContext";
 // export const internships = [
 //   {
 //     _id: "1",
@@ -90,6 +91,7 @@ const index = () => {
         }
         fetchdata()
     }, [id])
+    const { t } = useLanguage();
     const [availability, setAvailability] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [coverLetter, setCoverLetter] = useState("");
@@ -154,7 +156,7 @@ const index = () => {
                 <div className="p-6 border-b">
                     <div className="flex items-center space-x-2 text-blue-600 mb-4">
                         <ArrowUpRight className="h-5 w-5" />
-                        <span className="font-medium">Actively Hiring</span>
+                        <span className="font-medium">{t("activelyHiring")}</span>
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                         {internshipData.title}
@@ -226,9 +228,9 @@ const index = () => {
                 <div className="p-6 flex justify-center">
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-150"
+                        className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-150 font-semibold"
                     >
-                        Apply Now
+                        {t("applyNow")}
                     </button>
                 </div>
             </div>
@@ -339,8 +341,8 @@ const index = () => {
                             </div>
                             <div className="flex justify-end pt-4">
                                 {user ? (
-                                    <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700" onClick={handlesubmitapplication}>
-                                        Submit Application
+                                    <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold" onClick={handlesubmitapplication}>
+                                        {t("submitApplication")}
                                     </button>
                                 ) : (
                                     <Link

@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
         name: String,
         photo: String,
         isPremium: { type: Boolean, default: false },
+        preferredLanguage: { type: String, default: "en" },
     },
     { timestamps: true }
 );

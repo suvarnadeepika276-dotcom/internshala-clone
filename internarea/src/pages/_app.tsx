@@ -9,6 +9,8 @@ import { auth } from "@/firebase/firebase";
 import { login, logout } from "@/Feature/Userslice";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { LanguageProvider } from "@/context/LanguageContext";
+import FrenchOtpModal from "@/Components/Language/FrenchOtpModal";
 export default function App({ Component, pageProps }: AppProps) {
   function AuthListener() {
     const dispatch = useDispatch();
@@ -34,13 +36,16 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <Provider store={store}>
-      <AuthListener />
-      <div className="bg-white">
-        <ToastContainer/>
-        <Navbar />
-        <Component {...pageProps} />
-        <Footer />
-      </div>
+      <LanguageProvider>
+        <AuthListener />
+        <div className="bg-white">
+          <ToastContainer/>
+          <Navbar />
+          <FrenchOtpModal />
+          <Component {...pageProps} />
+          <Footer />
+        </div>
+      </LanguageProvider>
     </Provider>
   );
 }

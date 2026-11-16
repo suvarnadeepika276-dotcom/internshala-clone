@@ -2,11 +2,12 @@ import React, { use, useEffect, useRef, useState } from "react";
 import logo from "../Assets/logo.png";
 import Link from "next/link";
 import { auth, provider } from "../firebase/firebase";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Globe, Lock } from "lucide-react";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
+import { useLanguage, LanguageCode } from "../context/LanguageContext";
 interface User {
     name: string;
     email: string;
@@ -14,6 +15,17 @@ interface User {
 }
 const Navbar = () => {
     const user = useSelector(selectuser);
+    const { language, setLanguage, t } = useLanguage();
+    const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+
+    const languages: { code: LanguageCode; name: string; native: string; requiresOtp?: boolean }[] = [
+        { code: "en", name: "English", native: "English" },
+        { code: "es", name: "Spanish", native: "Español" },
+        { code: "hi", name: "Hindi", native: "हिन्दी" },
+        { code: "pt", name: "Portuguese", native: "Português" },
+        { code: "zh", name: "Chinese", native: "中文" },
+        { code: "fr", name: "French", native: "Français", requiresOtp: true },
+    ];
     const handleLogin = async () => {
         try {
             await signInWithPopup(auth, provider);
@@ -47,18 +59,18 @@ const Navbar = () => {
                         <div className="hidden md:flex items-center space-x-8">
                             <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600">
                                 <Link href={"/internship"}>
-                                    <span>Internships</span>
+                                    <span>{t("internships")}</span>
                                 </Link>
                             </button>
                             <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600">
                                 <Link href={"/job"}>
-                                    <span>Jobs</span>
+                                    <span>{t("jobs")}</span>
                                 </Link>
                             </button>
                             {user && (
                                 <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600">
                                     <Link href={"/resumebuilder"}>
-                                        <span>Resume Builder</span>
+                                        <span>{t("resumeBuilder")}</span>
                                     </Link>
                                 </button>
                             )}
@@ -66,31 +78,69 @@ const Navbar = () => {
                                 <Search size={16} className="text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search opportunities..."
+                                    placeholder={t("searchPlaceholder")}
                                     className="ml-2 bg-transparent focus:outline-none text-sm w-48"
                                 />
                             </div>
                         </div>
 
-                        {/* Auth Buttons */}
+                        {/* Right Section: Language Switcher + Auth */}
                         <div className="flex items-center space-x-4">
+                            {/* Multi-language Selector */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium text-gray-700 transition"
+                                    title="Choose Language"
+                                >
+                                    <Globe className="w-4 h-4 text-blue-600" />
+                                    <span className="uppercase font-bold">{language}</span>
+                                    {language === "fr" && <Lock className="w-3 h-3 text-amber-500" />}
+                                    <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                                </button>
+
+                                {langDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 animate-in fade-in zoom-in-95">
+                                        <div className="px-3 py-1 border-b text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                            Select Language
+                                        </div>
+                                        {languages.map((l) => (
+                                            <button
+                                                key={l.code}
+                                                onClick={() => {
+                                                    setLangDropdownOpen(false);
+                                                    setLanguage(l.code);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-blue-50 transition ${
+                                                    language === l.code ? "bg-blue-50 font-bold text-blue-600" : "text-gray-700"
+                                                }`}
+                                            >
+                                                <span>{l.native} ({l.name})</span>
+                                                {l.requiresOtp && (
+                                                    <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-normal">
+                                                        <Lock className="w-2.5 h-2.5" /> OTP
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             {user ? (
-                                <div className="relative flex">
-                                    <button className="flex items-center space-x-2">
-                                        {" "}
-                                        <Link href={"/profile"}>
-                                            <img
-                                                src={user.photo}
-                                                alt=""
-                                                className="w-8 h-8 rounded-full"
-                                            />
-                                        </Link>
-                                    </button>
+                                <div className="relative flex items-center gap-2">
+                                    <Link href={"/profile"}>
+                                        <img
+                                            src={user.photo}
+                                            alt=""
+                                            className="w-8 h-8 rounded-full border"
+                                        />
+                                    </Link>
                                     <button
-                                        className="flex items-center w-full px-4 py-2  text-gray-700  hover:bg-gray-200 rounded-lg"
+                                        className="px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg font-medium"
                                         onClick={handleLogout}
                                     >
-                                        Logout
+                                        {t("logout")}
                                     </button>
                                 </div>
                             ) : (
