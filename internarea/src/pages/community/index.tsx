@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from "react-toastify";
 import Head from "next/head";
 import Link from "next/link";
 import { auth } from "@/firebase/firebase";
@@ -420,7 +420,6 @@ export default function CommunityPage() {
   return (
     <>
       <Head><title>Community – Public Space</title></Head>
-      <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 py-6">
