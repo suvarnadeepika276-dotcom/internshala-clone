@@ -273,7 +273,18 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
         try {
             setOtpSentSuccess(false);
-            const res = await axios.post(`${API_BASE}/language/french-otp/request`, { email: targetEmail });
+            // Show a toast while waiting — Render free tier may take ~30s to wake up
+            const toastId = toast.info("Connecting to server... (may take up to 30 seconds if server is waking up)", {
+                autoClose: false,
+            });
+
+            const res = await axios.post(
+                `${API_BASE}/language/french-otp/request`,
+                { email: targetEmail },
+                { timeout: 60000 } // 60 second timeout for cold-start
+            );
+
+            toast.dismiss(toastId);
             setOtpSentSuccess(true);
             if (res.data?.demoOtp) {
                 setOtpHint(res.data.demoOtp);
@@ -282,7 +293,11 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
             return true;
         } catch (err: any) {
             console.error("French OTP request error:", err);
-            toast.error(err?.response?.data?.error || "Could not connect to server to send OTP.");
+            const errMsg = err?.response?.data?.error
+                || (err?.code === "ECONNABORTED" ? "Server took too long to respond. Please try again — the server may be waking up." : null)
+                || "Could not connect to server. Please try again in a moment.";
+            toast.dismiss();
+            toast.error(errMsg);
             return false;
         }
     };
@@ -298,8 +313,10 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
             setIsOtpModalOpen(true);
             setOtpHint(null);
             setOtpSentSuccess(false);
-
+            // Only auto-send if we already have the user's email (they are logged in)
+            // If not logged in, they must enter email manually and click Send OTP
             if (emailToUse) {
+                // Don't block UI — fire in background
                 handleSendFrenchOtp(emailToUse);
             }
             return;
