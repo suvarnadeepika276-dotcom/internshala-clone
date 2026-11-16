@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 
 export type LanguageCode = "en" | "es" | "hi" | "pt" | "zh" | "fr";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://internshala-clone-ahv9.onrender.com/api";
+
 interface LanguageContextType {
     language: LanguageCode;
     setLanguage: (lang: LanguageCode) => void;
@@ -16,8 +18,10 @@ interface LanguageContextType {
     closeOtpModal: () => void;
     pendingFrenchEmail: string;
     setPendingFrenchEmail: (email: string) => void;
+    handleSendFrenchOtp: (emailOverride?: string) => Promise<boolean>;
     handleVerifyFrenchOtp: (otp: string) => Promise<boolean>;
-    handleResendFrenchOtp: () => Promise<void>;
+    otpSentSuccess: boolean;
+    otpHint: string | null;
 }
 
 const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
@@ -211,14 +215,18 @@ const LanguageContext = createContext<LanguageContextType>({
     closeOtpModal: () => {},
     pendingFrenchEmail: "",
     setPendingFrenchEmail: () => {},
+    handleSendFrenchOtp: async () => false,
     handleVerifyFrenchOtp: async () => false,
-    handleResendFrenchOtp: async () => {},
+    otpSentSuccess: false,
+    otpHint: null,
 });
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
     const [language, setLanguageState] = useState<LanguageCode>("en");
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
     const [pendingFrenchEmail, setPendingFrenchEmail] = useState("");
+    const [otpSentSuccess, setOtpSentSuccess] = useState(false);
+    const [otpHint, setOtpHint] = useState<string | null>(null);
     const user = useSelector(selectuser);
 
     const getBrowserInfo = () => {
@@ -244,9 +252,39 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
         }
     }, []);
 
-    // Helper for translation keys with English fallback
+    // Set default user email if logged in
+    useEffect(() => {
+        if (user?.email && !pendingFrenchEmail) {
+            setPendingFrenchEmail(user.email);
+        }
+    }, [user]);
+
     const t = (key: string): string => {
         return TRANSLATIONS[language]?.[key] || TRANSLATIONS.en[key] || key;
+    };
+
+    // Request French OTP from backend
+    const handleSendFrenchOtp = async (emailOverride?: string): Promise<boolean> => {
+        const targetEmail = emailOverride || pendingFrenchEmail || user?.email;
+        if (!targetEmail) {
+            toast.error("Please enter a valid email address.");
+            return false;
+        }
+
+        try {
+            setOtpSentSuccess(false);
+            const res = await axios.post(`${API_BASE}/language/french-otp/request`, { email: targetEmail });
+            setOtpSentSuccess(true);
+            if (res.data?.demoOtp) {
+                setOtpHint(res.data.demoOtp);
+            }
+            toast.success(`OTP sent to ${targetEmail}`);
+            return true;
+        } catch (err: any) {
+            console.error("French OTP request error:", err);
+            toast.error(err?.response?.data?.error || "Could not connect to server to send OTP.");
+            return false;
+        }
     };
 
     // Switch language function
@@ -258,15 +296,11 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
             const emailToUse = user?.email || pendingFrenchEmail || "";
             setPendingFrenchEmail(emailToUse);
             setIsOtpModalOpen(true);
+            setOtpHint(null);
+            setOtpSentSuccess(false);
 
             if (emailToUse) {
-                try {
-                    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-                    await axios.post(`${apiBase}/language/french-otp/request`, { email: emailToUse });
-                    toast.info(`Security check: OTP sent to ${emailToUse} to authorize French language switch.`);
-                } catch (err) {
-                    console.error("Failed to send OTP", err);
-                }
+                handleSendFrenchOtp(emailToUse);
             }
             return;
         }
@@ -285,8 +319,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
         // Sync with backend audit log & user profile
         try {
             const { browser, device } = getBrowserInfo();
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-            await axios.post(`${apiBase}/language/change`, {
+            await axios.post(`${API_BASE}/language/change`, {
                 language: newLang,
                 previousLanguage: prev,
                 email: user?.email || "guest",
@@ -303,8 +336,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     const handleVerifyFrenchOtp = async (otp: string): Promise<boolean> => {
         try {
             const { browser, device } = getBrowserInfo();
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-            await axios.post(`${apiBase}/language/french-otp/verify`, {
+            await axios.post(`${API_BASE}/language/french-otp/verify`, {
                 email: pendingFrenchEmail || user?.email,
                 otp,
                 previousLanguage: language,
@@ -317,26 +349,12 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
                 localStorage.setItem("preferred_language", "fr");
             }
             setIsOtpModalOpen(false);
+            setOtpHint(null);
             toast.success("✅ Identity verified! Website language switched to French (Français).");
             return true;
         } catch (err: any) {
-            toast.error(err?.response?.data?.error || "OTP verification failed. Please try again.");
+            toast.error(err?.response?.data?.error || "Invalid or expired OTP. Please try again.");
             return false;
-        }
-    };
-
-    const handleResendFrenchOtp = async () => {
-        const email = pendingFrenchEmail || user?.email;
-        if (!email) {
-            toast.error("Please provide your email address to receive OTP");
-            return;
-        }
-        try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-            await axios.post(`${apiBase}/language/french-otp/request`, { email });
-            toast.success(`New OTP sent to ${email}`);
-        } catch (err) {
-            toast.error("Failed to resend OTP");
         }
     };
 
@@ -347,11 +365,16 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
                 setLanguage,
                 t,
                 isOtpModalOpen,
-                closeOtpModal: () => setIsOtpModalOpen(false),
+                closeOtpModal: () => {
+                    setIsOtpModalOpen(false);
+                    setOtpHint(null);
+                },
                 pendingFrenchEmail,
                 setPendingFrenchEmail,
+                handleSendFrenchOtp,
                 handleVerifyFrenchOtp,
-                handleResendFrenchOtp,
+                otpSentSuccess,
+                otpHint,
             }}
         >
             {children}

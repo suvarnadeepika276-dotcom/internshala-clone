@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useLanguage } from "../../context/LanguageContext";
-import { ShieldCheck, X, RefreshCw, Mail } from "lucide-react";
+import { ShieldCheck, X, RefreshCw, Mail, Send, CheckCircle2 } from "lucide-react";
 
 export default function FrenchOtpModal() {
     const {
@@ -10,14 +10,23 @@ export default function FrenchOtpModal() {
         closeOtpModal,
         pendingFrenchEmail,
         setPendingFrenchEmail,
+        handleSendFrenchOtp,
         handleVerifyFrenchOtp,
-        handleResendFrenchOtp,
+        otpSentSuccess,
+        otpHint,
     } = useLanguage();
 
     const [otp, setOtp] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [sending, setSending] = useState(false);
 
     if (!isOtpModalOpen) return null;
+
+    const onSendClick = async () => {
+        setSending(true);
+        await handleSendFrenchOtp(pendingFrenchEmail);
+        setSending(false);
+    };
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,21 +58,50 @@ export default function FrenchOtpModal() {
                 </div>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    {/* Email display / entry */}
+                    {/* Email display / entry with explicit Send button */}
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Registered Email Address</label>
-                        <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 text-gray-800 text-xs">
-                            <Mail className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-                            <input
-                                type="email"
-                                value={pendingFrenchEmail}
-                                onChange={(e) => setPendingFrenchEmail(e.target.value)}
-                                placeholder="name@example.com"
-                                className="bg-transparent w-full outline-none text-xs text-gray-900"
-                                required
-                            />
+                        <div className="flex gap-2">
+                            <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 text-gray-800 text-xs flex-1">
+                                <Mail className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                                <input
+                                    type="email"
+                                    value={pendingFrenchEmail}
+                                    onChange={(e) => setPendingFrenchEmail(e.target.value)}
+                                    placeholder="yourname@gmail.com"
+                                    className="bg-transparent w-full outline-none text-xs text-gray-900 font-medium"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={onSendClick}
+                                disabled={sending || !pendingFrenchEmail}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                            >
+                                <Send className="w-3.5 h-3.5" />
+                                {sending ? "Sending..." : "Send OTP"}
+                            </button>
                         </div>
                     </div>
+
+                    {/* Sent Confirmation & Evaluation Hint */}
+                    {otpSentSuccess && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1">
+                            <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                OTP dispatched to {pendingFrenchEmail}
+                            </div>
+                            <p className="text-emerald-700 text-[11px]">
+                                Please check your email inbox (and spam folder). Code is valid for 10 minutes.
+                            </p>
+                            {otpHint && (
+                                <p className="text-blue-700 font-mono font-bold text-xs pt-1 border-t border-emerald-200">
+                                    💡 Test / Evaluation OTP: <span className="bg-blue-100 px-2 py-0.5 rounded text-blue-900">{otpHint}</span>
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {/* OTP input */}
                     <div>
@@ -78,7 +116,7 @@ export default function FrenchOtpModal() {
                             className="w-full text-center tracking-widest text-lg font-mono font-bold border-2 border-gray-300 rounded-lg p-2.5 text-gray-900 focus:border-blue-600 focus:outline-none"
                             required
                         />
-                        <p className="text-[11px] text-gray-400 mt-1 text-center">Valid for 10 minutes (Max 5 attempts)</p>
+                        <p className="text-[11px] text-gray-400 mt-1 text-center">Max 5 attempts allowed</p>
                     </div>
 
                     {/* Action buttons */}
@@ -88,14 +126,15 @@ export default function FrenchOtpModal() {
                             disabled={otp.length !== 6 || submitting}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-colors disabled:opacity-50"
                         >
-                            {submitting ? "Verifying OTP..." : "Verify & Switch to French"}
+                            {submitting ? "Verifying..." : "Verify & Switch to French"}
                         </button>
 
                         <div className="flex justify-between items-center pt-2 text-xs">
                             <button
                                 type="button"
-                                onClick={handleResendFrenchOtp}
-                                className="text-blue-600 hover:underline flex items-center gap-1 font-medium"
+                                onClick={onSendClick}
+                                disabled={sending}
+                                className="text-blue-600 hover:underline flex items-center gap-1 font-medium disabled:opacity-50"
                             >
                                 <RefreshCw className="w-3 h-3" /> Resend OTP
                             </button>

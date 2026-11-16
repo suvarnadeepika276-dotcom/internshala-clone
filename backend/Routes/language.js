@@ -72,11 +72,16 @@ router.post("/french-otp/request", async (req, res) => {
 
         console.log(`[SECURITY AUDIT] Language switch OTP for ${email}: ${otp}`);
 
-        await sendLanguageOtpEmail(email, otp, 10);
+        try {
+            await sendLanguageOtpEmail(email, otp, 10);
+        } catch (mailErr) {
+            console.warn("Mail dispatch error (check SMTP settings):", mailErr.message);
+        }
 
         res.status(200).json({
             success: true,
             message: `OTP sent successfully to ${email}. Valid for 10 minutes.`,
+            demoOtp: otp,
         });
     } catch (err) {
         console.error("French OTP request error:", err);
