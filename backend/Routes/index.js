@@ -9,6 +9,7 @@ const language = require("./language");
 const forgotPassword = require("./forgotPassword");
 const posts = require("./posts");
 const friends = require("./friends");
+const loginTracking = require("./loginTracking");
 
 router.use("/admin", admin);
 router.use("/internship", intern);
@@ -19,6 +20,7 @@ router.use("/language", language);
 router.use("/auth/forgot-password", forgotPassword);
 router.use("/posts", posts);
 router.use("/friends", friends);
+router.use("/login-tracking", loginTracking);
 
 
 module.exports = router;

@@ -39,4 +39,18 @@ async function sendLanguageOtpEmail(toEmail, otpCode, ttlMinutes = 10) {
   }
 }
 
-module.exports = { sendOtpEmail, sendLanguageOtpEmail };
+async function sendLoginOtpEmail(toEmail, otpCode, ttlMinutes = 10) {
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: toEmail,
+      subject: "Login Verification Code – Chrome Browser",
+      text: `Your login verification code is ${otpCode}. It expires in ${ttlMinutes} minutes. This is required because you are logging in from Google Chrome.`,
+      html: `<h3>Login Security Verification</h3><p>You are logging in from <b>Google Chrome</b>. Your verification code is:</p><p style="font-size:28px;font-weight:bold;color:#1a73e8;letter-spacing:4px;">${otpCode}</p><p>This code expires in ${ttlMinutes} minutes. If you did not attempt to log in, please secure your account immediately.</p>`,
+    });
+  } catch (err) {
+    console.log("Login OTP email error:", err.message);
+  }
+}
+
+module.exports = { sendOtpEmail, sendLanguageOtpEmail, sendLoginOtpEmail };
