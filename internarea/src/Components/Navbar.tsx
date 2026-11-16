@@ -179,6 +179,12 @@ const Navbar = () => {
                                     >
                                         Admin
                                     </a>
+                                    <a
+                                        href="/forgot-password"
+                                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                    >
+                                        Forgot Password?
+                                    </a>
                                 </>
                             )}
                         </div>

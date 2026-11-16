@@ -8,6 +8,10 @@ const userSchema = new mongoose.Schema(
         photo: String,
         isPremium: { type: Boolean, default: false },
         preferredLanguage: { type: String, default: "en" },
+        phoneNumber: { type: String, default: "" },
+        password: { type: String }, // Hashed password
+        mustChangePassword: { type: Boolean, default: false },
+        lastPasswordResetRequest: { type: Date },
     },
     { timestamps: true }
 );
