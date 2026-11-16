@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import { useRouter } from "next/router";
+import { selectuser } from "@/Feature/Userslice";
 import toast, { Toaster } from "react-hot-toast";
 import Head from "next/head";
 import Link from "next/link";
+import { auth } from "@/firebase/firebase";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://internshala-clone-ahv9.onrender.com/api";
 
@@ -48,9 +48,9 @@ interface FriendRequest {
 
 export default function CommunityPage() {
   const router = useRouter();
-  const user = useSelector((state: RootState) => state.auth?.user);
-  const firebaseUser = useSelector((state: RootState) => state.auth?.firebaseUser);
-
+  const user = useSelector(selectuser);
+  const router = useRouter();
+  const firebaseUser = auth.currentUser;
   const [activeTab, setActiveTab] = useState<"feed" | "myposts" | "friends" | "notifications">("feed");
   const [friendPosts, setFriendPosts] = useState<Post[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
@@ -83,10 +83,10 @@ export default function CommunityPage() {
   const [searching, setSearching] = useState(false);
 
   const getToken = async () => {
-    if (!firebaseUser) return null;
+    const fbUser = auth.currentUser;
+    if (!fbUser) return null;
     try {
-      const token = await (firebaseUser as any).getIdToken();
-      return token;
+      return await fbUser.getIdToken();
     } catch {
       return null;
     }
@@ -404,9 +404,9 @@ export default function CommunityPage() {
   };
 
   const PostCard = ({ post, showOwnerActions }: { post: Post; showOwnerActions?: boolean }) => {
-    const userId = user?._id || user?.id;
-    const isLiked = userId ? post.likes.includes(userId) : false;
-    const isOwner = userId ? (post.userId?._id === userId) : false;
+    const userEmail = user?.email;
+    const isLiked = userEmail ? post.likes.some((id: any) => typeof id === "object" ? id?.email === userEmail : false) : false;
+    const isOwner = userEmail ? (post.userId?.email === userEmail) : false;
 
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
