@@ -8,79 +8,30 @@ import { auth } from "@/firebase/firebase";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://internshala-clone-ahv9.onrender.com/api";
 
-interface Comment {
-  _id: string;
-  userId: { _id: string; name: string; photo: string };
-  text: string;
-  createdAt: string;
-}
-
-interface Post {
-  _id: string;
-  userId: { _id: string; name: string; photo: string; email: string };
-  content: string;
-  mediaUrl: string;
-  mediaType: string;
-  privacySettings: string;
-  likes: string[];
-  comments: Comment[];
-  shares: number;
-  savedBy: string[];
-  viewCount: number;
-  hashtags: string[];
-  mentions: string[];
-  isEdited: boolean;
-  friendCountAtPosting: number;
-  createdAt: string;
-}
-
-interface Friend {
-  _id: string;
-  name: string;
-  photo: string;
-  email: string;
-}
-
-interface FriendRequest {
-  _id: string;
-  sender: { _id: string; name: string; photo: string; email: string };
-}
-
 export default function CommunityPage() {
-  const router = useRouter();
   const user = useSelector(selectuser);
-  const router = useRouter();
-  const firebaseUser = auth.currentUser;
+
   const [activeTab, setActiveTab] = useState<"feed" | "myposts" | "friends" | "notifications">("feed");
-  const [friendPosts, setFriendPosts] = useState<Post[]>([]);
-  const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
-  const [myPosts, setMyPosts] = useState<Post[]>([]);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+  const [friendPosts, setFriendPosts] = useState<any[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<any[]>([]);
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchUsers, setSearchUsers] = useState<Friend[]>([]);
+  const [searchUsers, setSearchUsers] = useState<any[]>([]);
   const [friendEmail, setFriendEmail] = useState("");
-
-  // Create post state
   const [postContent, setPostContent] = useState("");
   const [postMediaUrl, setPostMediaUrl] = useState("");
   const [postMediaType, setPostMediaType] = useState("text");
   const [postPrivacy, setPostPrivacy] = useState("public");
   const [creating, setCreating] = useState(false);
-
-  // Edit post state
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
-
-  // Comment state
   const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
-
-  // Search results
-  const [searchResults, setSearchResults] = useState<Post[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const getToken = async () => {
     const fbUser = auth.currentUser;
@@ -94,36 +45,38 @@ export default function CommunityPage() {
 
   const authHeaders = async () => {
     const token = await getToken();
-    return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+    return token
+      ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+      : { "Content-Type": "application/json" };
   };
 
   useEffect(() => {
     if (activeTab === "feed") fetchFeed();
     if (activeTab === "myposts") fetchMyPosts();
-    if (activeTab === "friends") {
-      fetchFriends();
-      fetchPendingRequests();
-    }
+    if (activeTab === "friends") { fetchFriends(); fetchPendingRequests(); }
     if (activeTab === "notifications") fetchNotifications();
   }, [activeTab]);
 
   const fetchFeed = async () => {
     setLoading(true);
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API}/posts/feed`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setFriendPosts(data.friendPosts || []);
-        setTrendingPosts(data.trendingPosts || []);
+      if (user) {
+        const headers = await authHeaders();
+        const res = await fetch(`${API}/posts/feed`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setFriendPosts(data.friendPosts || []);
+          setTrendingPosts(data.trendingPosts || []);
+        }
+      } else {
+        const res = await fetch(`${API}/posts/all`);
+        if (res.ok) {
+          const data = await res.json();
+          setTrendingPosts(data.posts || []);
+        }
       }
     } catch (err) {
-      // If not logged in, fetch public posts
-      const res = await fetch(`${API}/posts/all`);
-      if (res.ok) {
-        const data = await res.json();
-        setTrendingPosts(data.posts || []);
-      }
+      console.log("Feed error", err);
     }
     setLoading(false);
   };
@@ -147,22 +100,16 @@ export default function CommunityPage() {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/friends/list`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setFriends(data.friends || []);
-      }
-    } catch (err) {}
+      if (res.ok) { const data = await res.json(); setFriends(data.friends || []); }
+    } catch (err) { console.log(err); }
   };
 
   const fetchPendingRequests = async () => {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/friends/pending`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setPendingRequests(data.requests || []);
-      }
-    } catch (err) {}
+      if (res.ok) { const data = await res.json(); setPendingRequests(data.requests || []); }
+    } catch (err) { console.log(err); }
   };
 
   const fetchNotifications = async () => {
@@ -170,50 +117,29 @@ export default function CommunityPage() {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/posts/notifications/my`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.notifications || []);
-      }
-    } catch (err) {}
+      if (res.ok) { const data = await res.json(); setNotifications(data.notifications || []); }
+    } catch (err) { console.log(err); }
     setLoading(false);
   };
 
   const handleCreatePost = async () => {
-    if (!user) {
-      toast.error("Please login to create posts");
-      return;
-    }
-    if (!postContent.trim() && !postMediaUrl.trim()) {
-      toast.error("Post cannot be empty");
-      return;
-    }
+    if (!user) { toast.error("Please login to create posts"); return; }
+    if (!postContent.trim() && !postMediaUrl.trim()) { toast.error("Post cannot be empty"); return; }
     setCreating(true);
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/posts/create`, {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          content: postContent,
-          mediaUrl: postMediaUrl,
-          mediaType: postMediaType,
-          privacySettings: postPrivacy,
-        }),
+        body: JSON.stringify({ content: postContent, mediaUrl: postMediaUrl, mediaType: postMediaType, privacySettings: postPrivacy }),
       });
       const data = await res.json();
       if (res.ok) {
         toast.success("Post created!");
-        setPostContent("");
-        setPostMediaUrl("");
-        setPostMediaType("text");
-        fetchFeed();
-        fetchMyPosts();
-      } else {
-        toast.error(data.error || "Failed to create post");
-      }
-    } catch (err) {
-      toast.error("Server error");
-    }
+        setPostContent(""); setPostMediaUrl(""); setPostMediaType("text");
+        fetchFeed(); fetchMyPosts();
+      } else { toast.error(data.error || "Failed to create post"); }
+    } catch (err) { toast.error("Server error"); }
     setCreating(false);
   };
 
@@ -221,16 +147,10 @@ export default function CommunityPage() {
     if (!user) { toast.error("Login to like posts"); return; }
     try {
       const headers = await authHeaders();
-      const res = await fetch(`${API}/posts/${postId}/like`, { method: "POST", headers });
-      const data = await res.json();
-      if (res.ok) {
-        // Refresh feed
-        fetchFeed();
-        if (activeTab === "myposts") fetchMyPosts();
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {}
+      await fetch(`${API}/posts/${postId}/like`, { method: "POST", headers });
+      fetchFeed();
+      if (activeTab === "myposts") fetchMyPosts();
+    } catch (err) { console.log(err); }
   };
 
   const handleComment = async (postId: string) => {
@@ -240,9 +160,7 @@ export default function CommunityPage() {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/posts/${postId}/comment`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ text }),
+        method: "POST", headers, body: JSON.stringify({ text }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -250,10 +168,8 @@ export default function CommunityPage() {
         setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
         fetchFeed();
         if (activeTab === "myposts") fetchMyPosts();
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {}
+      } else { toast.error(data.error); }
+    } catch (err) { console.log(err); }
   };
 
   const handleShare = async (postId: string) => {
@@ -262,7 +178,7 @@ export default function CommunityPage() {
       const headers = await authHeaders();
       await fetch(`${API}/posts/${postId}/share`, { method: "POST", headers });
       toast.success("Post shared!");
-    } catch (err) {}
+    } catch (err) { console.log(err); }
   };
 
   const handleSave = async (postId: string) => {
@@ -272,7 +188,7 @@ export default function CommunityPage() {
       const res = await fetch(`${API}/posts/${postId}/save`, { method: "POST", headers });
       const data = await res.json();
       toast.success(data.message || "Done");
-    } catch (err) {}
+    } catch (err) { console.log(err); }
   };
 
   const handleReport = async (postId: string) => {
@@ -283,7 +199,7 @@ export default function CommunityPage() {
       const res = await fetch(`${API}/posts/${postId}/report`, { method: "POST", headers });
       const data = await res.json();
       toast.success(data.message || "Reported");
-    } catch (err) {}
+    } catch (err) { console.log(err); }
   };
 
   const handleDelete = async (postId: string) => {
@@ -292,72 +208,47 @@ export default function CommunityPage() {
       const headers = await authHeaders();
       const res = await fetch(`${API}/posts/${postId}`, { method: "DELETE", headers });
       const data = await res.json();
-      if (res.ok) {
-        toast.success("Post deleted");
-        fetchMyPosts();
-        fetchFeed();
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {}
+      if (res.ok) { toast.success("Post deleted"); fetchMyPosts(); fetchFeed(); }
+      else { toast.error(data.error); }
+    } catch (err) { console.log(err); }
   };
 
   const handleEditSave = async (postId: string) => {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/posts/${postId}/edit`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ content: editContent }),
+        method: "PUT", headers, body: JSON.stringify({ content: editContent }),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success("Post updated!");
-        setEditingPostId(null);
-        fetchMyPosts();
-        fetchFeed();
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {}
+      if (res.ok) { toast.success("Post updated!"); setEditingPostId(null); fetchMyPosts(); fetchFeed(); }
+      else { toast.error(data.error); }
+    } catch (err) { console.log(err); }
   };
 
-  const handleSendFriendRequest = async () => {
-    if (!friendEmail.trim()) { toast.error("Enter email"); return; }
+  const handleSendFriendRequest = async (emailArg?: string) => {
+    const target = emailArg || friendEmail;
+    if (!target.trim()) { toast.error("Enter email"); return; }
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/friends/request`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ receiverEmail: friendEmail }),
+        method: "POST", headers, body: JSON.stringify({ receiverEmail: target }),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success(data.message);
-        setFriendEmail("");
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {}
+      if (res.ok) { toast.success(data.message); setFriendEmail(""); }
+      else { toast.error(data.error); }
+    } catch (err) { console.log(err); }
   };
 
   const handleRespondRequest = async (friendshipId: string, action: "accept" | "reject") => {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/friends/respond`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ friendshipId, action }),
+        method: "POST", headers, body: JSON.stringify({ friendshipId, action }),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success(data.message);
-        fetchPendingRequests();
-        fetchFriends();
-      } else {
-        toast.error(data.error);
-      }
-    } catch (err) {}
+      if (res.ok) { toast.success(data.message); fetchPendingRequests(); fetchFriends(); }
+      else { toast.error(data.error); }
+    } catch (err) { console.log(err); }
   };
 
   const handleSearchUsers = async () => {
@@ -365,23 +256,15 @@ export default function CommunityPage() {
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API}/friends/users/search?q=${encodeURIComponent(searchQuery)}`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setSearchUsers(data.users || []);
-      }
-    } catch (err) {}
+      if (res.ok) { const data = await res.json(); setSearchUsers(data.users || []); }
+    } catch (err) { console.log(err); }
   };
 
   const handleSearchPosts = async () => {
-    setSearching(true);
     try {
       const res = await fetch(`${API}/posts/search?q=${encodeURIComponent(searchQuery)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data.posts || []);
-      }
-    } catch (err) {}
-    setSearching(false);
+      if (res.ok) { const data = await res.json(); setSearchResults(data.posts || []); }
+    } catch (err) { console.log(err); }
   };
 
   const handleMarkAllRead = async () => {
@@ -390,23 +273,21 @@ export default function CommunityPage() {
       await fetch(`${API}/posts/notifications/read-all`, { method: "POST", headers });
       fetchNotifications();
       toast.success("All marked as read");
-    } catch (err) {}
+    } catch (err) { console.log(err); }
   };
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
     if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return d.toLocaleDateString("en-IN");
   };
 
-  const PostCard = ({ post, showOwnerActions }: { post: Post; showOwnerActions?: boolean }) => {
+  const PostCard = ({ post, showOwnerActions }: { post: any; showOwnerActions?: boolean }) => {
     const userEmail = user?.email;
-    const isLiked = userEmail ? post.likes.some((id: any) => typeof id === "object" ? id?.email === userEmail : false) : false;
-    const isOwner = userEmail ? (post.userId?.email === userEmail) : false;
+    const isOwner = userEmail ? post.userId?.email === userEmail : false;
 
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
@@ -439,12 +320,7 @@ export default function CommunityPage() {
         {/* Edit mode */}
         {editingPostId === post._id ? (
           <div className="mb-3">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2 text-sm resize-none"
-              rows={3}
-            />
+            <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm resize-none" rows={3} />
             <div className="flex gap-2 mt-1">
               <button onClick={() => handleEditSave(post._id)} className="px-3 py-1 bg-blue-600 text-white rounded text-xs">Save</button>
               <button onClick={() => setEditingPostId(null)} className="px-3 py-1 bg-gray-200 rounded text-xs">Cancel</button>
@@ -452,29 +328,24 @@ export default function CommunityPage() {
           </div>
         ) : (
           <>
-            {/* Content */}
             {post.content && (
               <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">
-                {post.content.split(/(\s+)/).map((word, i) => {
-                  if (word.startsWith("#")) return <span key={i} className="text-blue-500 cursor-pointer">{word}</span>;
-                  if (word.startsWith("@")) return <span key={i} className="text-green-600 font-medium cursor-pointer">{word}</span>;
+                {post.content.split(/(\s+)/).map((word: string, i: number) => {
+                  if (word.startsWith("#")) return <span key={i} className="text-blue-500">{word}</span>;
+                  if (word.startsWith("@")) return <span key={i} className="text-green-600 font-medium">{word}</span>;
                   return word;
                 })}
               </p>
             )}
-
-            {/* Media */}
             {post.mediaUrl && post.mediaType === "photo" && (
-              <img src={post.mediaUrl} alt="post media" className="rounded-lg w-full max-h-80 object-cover mb-2" />
+              <img src={post.mediaUrl} alt="media" className="rounded-lg w-full max-h-80 object-cover mb-2" />
             )}
             {post.mediaUrl && post.mediaType === "video" && (
               <video src={post.mediaUrl} controls className="rounded-lg w-full mb-2" />
             )}
-
-            {/* Hashtags */}
-            {post.hashtags.length > 0 && (
+            {post.hashtags && post.hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {post.hashtags.map((tag) => (
+                {post.hashtags.map((tag: string) => (
                   <span key={tag} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">#{tag}</span>
                 ))}
               </div>
@@ -485,60 +356,40 @@ export default function CommunityPage() {
         {/* Stats */}
         <div className="flex items-center gap-4 text-xs text-gray-500 border-t pt-2 mt-2">
           <span>👁 {post.viewCount}</span>
-          <span>❤️ {post.likes.length}</span>
-          <span>💬 {post.comments.length}</span>
+          <span>❤️ {post.likes?.length || 0}</span>
+          <span>💬 {post.comments?.length || 0}</span>
           <span>🔁 {post.shares}</span>
         </div>
 
         {/* Actions */}
         <div className="flex gap-2 mt-2 flex-wrap">
-          <button
-            onClick={() => handleLike(post._id)}
-            className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition ${isLiked ? "bg-red-50 border-red-300 text-red-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-          >
-            {isLiked ? "❤️ Liked" : "🤍 Like"}
+          <button onClick={() => handleLike(post._id)} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">
+            🤍 Like
           </button>
-          <button
-            onClick={() => setShowComments((prev) => ({ ...prev, [post._id]: !prev[post._id] }))}
-            className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
-          >
+          <button onClick={() => setShowComments((prev) => ({ ...prev, [post._id]: !prev[post._id] }))} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-gray-50">
             💬 Comment
           </button>
-          <button
-            onClick={() => handleShare(post._id)}
-            className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
-          >
+          <button onClick={() => handleShare(post._id)} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-gray-50">
             🔁 Share
           </button>
-          <button
-            onClick={() => handleSave(post._id)}
-            className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
-          >
+          <button onClick={() => handleSave(post._id)} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-600 hover:bg-gray-50">
             🔖 Save
           </button>
           {!isOwner && (
-            <button
-              onClick={() => handleReport(post._id)}
-              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-500 hover:bg-red-50"
-            >
+            <button onClick={() => handleReport(post._id)} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs border border-gray-200 text-gray-500 hover:bg-red-50">
               🚩 Report
             </button>
           )}
         </div>
 
-        {/* Comments section */}
+        {/* Comments */}
         {showComments[post._id] && (
           <div className="mt-3">
-            {/* Comment list */}
-            {post.comments.length > 0 && (
+            {post.comments && post.comments.length > 0 && (
               <div className="mb-2 max-h-40 overflow-y-auto space-y-2">
-                {post.comments.map((c) => (
+                {post.comments.map((c: any) => (
                   <div key={c._id} className="flex items-start gap-2">
-                    <img
-                      src={c.userId?.photo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(c.userId?.name || "U")}
-                      className="w-6 h-6 rounded-full"
-                      alt=""
-                    />
+                    <img src={c.userId?.photo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(c.userId?.name || "U")} className="w-6 h-6 rounded-full" alt="" />
                     <div className="bg-gray-50 rounded-lg px-2 py-1 flex-1">
                       <p className="text-xs font-semibold text-gray-700">{c.userId?.name}</p>
                       <p className="text-xs text-gray-600">{c.text}</p>
@@ -547,7 +398,6 @@ export default function CommunityPage() {
                 ))}
               </div>
             )}
-            {/* Comment input */}
             {user && (
               <div className="flex gap-2">
                 <input
@@ -558,12 +408,7 @@ export default function CommunityPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") handleComment(post._id); }}
                   className="flex-1 border border-gray-200 rounded-full px-3 py-1 text-xs"
                 />
-                <button
-                  onClick={() => handleComment(post._id)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded-full text-xs"
-                >
-                  Post
-                </button>
+                <button onClick={() => handleComment(post._id)} className="px-3 py-1 bg-blue-600 text-white rounded-full text-xs">Post</button>
               </div>
             )}
           </div>
@@ -574,9 +419,7 @@ export default function CommunityPage() {
 
   return (
     <>
-      <Head>
-        <title>Community – Public Space</title>
-      </Head>
+      <Head><title>Community – Public Space</title></Head>
       <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-50">
@@ -600,7 +443,7 @@ export default function CommunityPage() {
           {/* FEED TAB */}
           {activeTab === "feed" && (
             <div>
-              {/* Search bar */}
+              {/* Search */}
               <div className="flex gap-2 mb-4">
                 <input
                   type="text"
@@ -616,7 +459,6 @@ export default function CommunityPage() {
                 )}
               </div>
 
-              {/* Search results */}
               {searchResults.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-semibold text-gray-600 mb-2">Search Results ({searchResults.length})</h3>
@@ -624,7 +466,7 @@ export default function CommunityPage() {
                 </div>
               )}
 
-              {/* Create post box */}
+              {/* Create post */}
               {user ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
                   <p className="text-sm font-semibold text-gray-700 mb-2">Create a Post</p>
@@ -636,37 +478,19 @@ export default function CommunityPage() {
                     rows={3}
                   />
                   <div className="flex flex-wrap gap-2 items-center">
-                    <select
-                      value={postMediaType}
-                      onChange={(e) => setPostMediaType(e.target.value)}
-                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs"
-                    >
+                    <select value={postMediaType} onChange={(e) => setPostMediaType(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-xs">
                       <option value="text">📝 Text Only</option>
                       <option value="photo">🖼️ Photo</option>
                       <option value="video">🎥 Video</option>
                     </select>
                     {(postMediaType === "photo" || postMediaType === "video") && (
-                      <input
-                        type="url"
-                        placeholder={postMediaType === "photo" ? "Photo URL" : "Video URL"}
-                        value={postMediaUrl}
-                        onChange={(e) => setPostMediaUrl(e.target.value)}
-                        className="border border-gray-200 rounded-lg px-2 py-1 text-xs flex-1 min-w-[200px]"
-                      />
+                      <input type="url" placeholder={postMediaType === "photo" ? "Photo URL" : "Video URL"} value={postMediaUrl} onChange={(e) => setPostMediaUrl(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-xs flex-1 min-w-[200px]" />
                     )}
-                    <select
-                      value={postPrivacy}
-                      onChange={(e) => setPostPrivacy(e.target.value)}
-                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs"
-                    >
+                    <select value={postPrivacy} onChange={(e) => setPostPrivacy(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-xs">
                       <option value="public">🌐 Public</option>
                       <option value="friends">👥 Friends only</option>
                     </select>
-                    <button
-                      onClick={handleCreatePost}
-                      disabled={creating}
-                      className="ml-auto px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium disabled:opacity-50"
-                    >
+                    <button onClick={handleCreatePost} disabled={creating} className="ml-auto px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium disabled:opacity-50">
                       {creating ? "Posting..." : "Post"}
                     </button>
                   </div>
@@ -681,15 +505,12 @@ export default function CommunityPage() {
                 <div className="text-center py-10 text-gray-400">Loading feed...</div>
               ) : (
                 <>
-                  {/* Friends' posts */}
                   {friendPosts.length > 0 && (
                     <div className="mb-4">
                       <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">From Your Friends</h3>
                       {friendPosts.map((post) => <PostCard key={post._id} post={post} />)}
                     </div>
                   )}
-
-                  {/* Trending public posts */}
                   {trendingPosts.length > 0 && (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">
@@ -698,7 +519,6 @@ export default function CommunityPage() {
                       {trendingPosts.map((post) => <PostCard key={post._id} post={post} />)}
                     </div>
                   )}
-
                   {friendPosts.length === 0 && trendingPosts.length === 0 && (
                     <div className="text-center py-16 text-gray-400">
                       <p className="text-4xl mb-3">📭</p>
@@ -749,12 +569,7 @@ export default function CommunityPage() {
                         onKeyDown={(e) => { if (e.key === "Enter") handleSendFriendRequest(); }}
                         className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
                       />
-                      <button
-                        onClick={handleSendFriendRequest}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
-                      >
-                        Send
-                      </button>
+                      <button onClick={() => handleSendFriendRequest()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Send</button>
                     </div>
                   </div>
 
@@ -783,12 +598,7 @@ export default function CommunityPage() {
                                 <p className="text-xs text-gray-500">{u.email}</p>
                               </div>
                             </div>
-                            <button
-                              onClick={() => { setFriendEmail(u.email); handleSendFriendRequest(); }}
-                              className="text-xs px-3 py-1 bg-blue-600 text-white rounded-full"
-                            >
-                              Add Friend
-                            </button>
+                            <button onClick={() => handleSendFriendRequest(u.email)} className="text-xs px-3 py-1 bg-blue-600 text-white rounded-full">Add Friend</button>
                           </div>
                         ))}
                       </div>
@@ -882,11 +692,7 @@ export default function CommunityPage() {
                     <div className="space-y-2">
                       {notifications.map((n) => (
                         <div key={n._id} className={`flex items-center gap-3 p-3 rounded-xl border ${n.isRead ? "bg-white border-gray-100" : "bg-blue-50 border-blue-200"}`}>
-                          <img
-                            src={n.fromUser?.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromUser?.name || "U")}`}
-                            className="w-9 h-9 rounded-full flex-shrink-0"
-                            alt=""
-                          />
+                          <img src={n.fromUser?.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromUser?.name || "U")}`} className="w-9 h-9 rounded-full flex-shrink-0" alt="" />
                           <div className="flex-1">
                             <p className="text-sm text-gray-800">{n.message}</p>
                             <p className="text-xs text-gray-400">{formatTime(n.createdAt)}</p>
